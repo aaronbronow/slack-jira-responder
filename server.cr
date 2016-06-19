@@ -1,27 +1,41 @@
 require "http/server"
+require "uri"
 
-server = HTTP::Server.new("0.0.0.0", 8080) do |context|
+config = {
+  host: "0.0.0.0",
+  port: 8081,
+  url: "https://goodworldsolutions.atlassian.net/browse/",
+  message: "Is this the link you're looking for?",
+  plural_message: "Are these the links you're looking for?",
+  keys: "MLL,LIQ,LP"
+}
+
+server = HTTP::Server.new(config[:host], config[:port]) do |context|
+  output = ""
+  message = config[:message]
+  encoded_url = URI.escape config[:url]
   context.response.content_type = "text/plain"
-  #puts context.request.body.inspect
-  body = context.request.body.nil? ? "" : context.request.body.to_s
+  next if context.request.body.nil? && context.request.query_params.nil?
+  body = context.request.body.to_s
+  body = context.request.query_params.to_s if !context.request.query_params.nil?
   text = body.split(/&/)[9]
-  next if text.includes? "https%3A%2F%2Fgoodworldsolutions.atlassian.net%2Fbrowse%2F"
-  key = get_key text
-  puts key
-  next if key == ""
-  context.response.print "{\"text\":\"Is this the link you're looking for? <https://goodworldsolutions.atlassian.net/browse/" + key + "|" + key + ">\"}"
-  #puts "https://goodworldsolutions.atlassian.net/browse/" + context.request.query_params["term"]
+  next if text.includes? encoded_url
+  keys = get_keys config[:keys].split(','), text
+  puts keys
+  next if keys == "" || keys.nil?
+  message = config[:plural_message] if keys.size > 1
+  output = "{\"text\":\"#{message} \
+    #{keys.map { |key| "<#{config[:url]}" + key + "|" + key + "> " }.join(' ')}\"}"
+  #
+  # output = "{\"text\":\"#{config[:message]}<#{config[:url]}" + key + "|" + key + ">\"}"
+  context.response.print output
 end
 
-puts "Listening on http://0.0.0.0:8080"
+puts "Listening on #{config[:host]}:#{config[:port]}"
 server.listen
 
-def get_key(input)
-  #output = {"id": 123, "hello": "world", "text": input, "key": ""}
-  key_regex = /(MLL-)\d+|(LIQ-)\d+|(LP-)\d+/m
-  # var matches = input.text.match(keyRegex);
-  # if(matches != null && matches.length > 0)
-  #   output[0]["key"] = matches[0];
-  matches = key_regex.match(input)
-  key = matches.nil? ? "" : matches[0]
+def get_keys(keys, input)
+  key_regex = /(#{keys.map { |key| "#{key}-\\d+" }.join '|'})/m
+  matches = input.scan(key_regex)
+  matches.map { |match| match[0] }
 end
