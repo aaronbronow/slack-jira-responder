@@ -3,7 +3,7 @@ require "uri"
 
 config = {
   host: "0.0.0.0",
-  port: 8081,
+  port: 8080,
   url: "https://goodworldsolutions.atlassian.net/browse/",
   message: "Is this the link you're looking for?",
   plural_message: "Are these the links you're looking for?",
@@ -17,7 +17,7 @@ server = HTTP::Server.new(config[:host], config[:port]) do |context|
   context.response.content_type = "text/plain"
   next if context.request.body.nil? && context.request.query_params.nil?
   body = context.request.body.to_s
-  body = context.request.query_params.to_s if !context.request.query_params.nil?
+  # body = context.request.query_params.to_s if !context.request.query_params.nil?
   text = body.split(/&/)[9]
   next if text.includes? encoded_url
   keys = get_keys config[:keys].split(','), text
