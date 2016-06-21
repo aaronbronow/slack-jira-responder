@@ -15,19 +15,18 @@ server = HTTP::Server.new(config[:host], config[:port]) do |context|
   message = config[:message]
   encoded_url = URI.escape config[:url]
   context.response.content_type = "text/plain"
-  next if context.request.body.nil? && context.request.query_params.nil?
+  next if context.request.body.nil?
   body = context.request.body.to_s
-  # body = context.request.query_params.to_s if !context.request.query_params.nil?
   text = body.split(/&/)[9]
+  next if text.includes? config[:message]
+  next if text.includes? config[:plural_message]
   next if text.includes? encoded_url
   keys = get_keys config[:keys].split(','), text
   puts keys
-  next if keys == "" || keys.nil?
+  next if keys == "" || keys.nil? || keys.empty?
   message = config[:plural_message] if keys.size > 1
   output = "{\"text\":\"#{message} \
     #{keys.map { |key| "<#{config[:url]}" + key + "|" + key + "> " }.join(' ')}\"}"
-  #
-  # output = "{\"text\":\"#{config[:message]}<#{config[:url]}" + key + "|" + key + ">\"}"
   context.response.print output
 end
 
