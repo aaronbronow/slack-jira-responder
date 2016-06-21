@@ -22,8 +22,8 @@ server = HTTP::Server.new(config[:host], config[:port]) do |context|
   next if text.includes? config[:plural_message]
   next if text.includes? encoded_url
   keys = get_keys config[:keys].split(','), text
-  puts keys
   next if keys == "" || keys.nil? || keys.empty?
+  puts "text: #{text}\nkeys: #{keys}"
   message = config[:plural_message] if keys.size > 1
   output = "{\"text\":\"#{message} \
     #{keys.map { |key| "<#{config[:url]}" + key + "|" + key + "> " }.join(' ')}\"}"
